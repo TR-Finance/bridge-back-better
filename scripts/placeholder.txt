@@ -1,0 +1,1 @@
+Use a deploy.js like: https://github.com/OffchainLabs/arbitrum-tutorials/blob/master/packages/eth-withdraw/scripts/exec-viaDApp.js

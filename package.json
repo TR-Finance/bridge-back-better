@@ -1,6 +1,6 @@
 {
   "name": "bridge-back-better",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Smart contracts and frontend for fast withdrawals from optimistic rollups to Ethereum",
   "directories": {
     "test": "test"

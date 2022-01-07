@@ -12,17 +12,17 @@ pragma solidity ^0.8.11;
 interface IBBBPoolV1 {
     /**
      * @notice Distributes a fee (paid by withdrawer) to stakers, in proportion to each staker's stake
-     * @param amount The total fee, in ether, to distribute
+     * @param amount The total fee, in wei, to distribute
      */
     function distributeFee(uint amount) external;
 
     /// @notice Stake ether. Unstaking takes 7 days.
     function provideLiq() external payable;
 
-    /// Start unstaking `amount` ether. Will be available to withdraw in 7 days.
+    /// Start unstaking `amount` wei. Will be available to withdraw in 7 days.
     function unstake(uint amount) external;
 
-    /// Withdraw `amount` ether.
+    /// Withdraw `amount` wei.
     function withdrawBalance(uint amount) external;
     
     /**

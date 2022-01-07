@@ -16,7 +16,7 @@ npx hardhat node
 
 3. In a new terminal window, navigate to this repo's root folder and deploy the contracts to the local test net you just started:
 ```sh
-npx hardhat run scripts/deploy.js --network localhost
+npx hardhat run scripts/deploy.ts --network localhost
 ```
 
 4. Run the frontend after installing its dependencies:

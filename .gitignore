@@ -1,6 +1,8 @@
 node_modules
 .idea
-
-#Hardhat files
+.env
+coverage
+coverage.json
+typechain
 cache
 artifacts

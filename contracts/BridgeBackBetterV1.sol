@@ -10,20 +10,20 @@ import "./interfaces/arbitrum/ITradeableExitReceiver.sol";
  */
 contract BridgeBackBetterV1 is ITradeableExitReceiver {
     address public owner;
-    IBBBPoolV1[] liqPools;
-    uint256 public fee;
+    IBBBPoolV1[] private liqPools;
+    uint public fee; // In wei
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Only the contract owner can do this");
         _;
     }
 
-    constructor(uint256 _fee) {
+    constructor(uint _fee) {
         owner = msg.sender;
         fee = _fee;
     }
 
-    function setFee(uint256 _fee) external onlyOwner {
+    function setFee(uint _fee) external onlyOwner {
         fee = _fee;
     }
 
@@ -33,7 +33,7 @@ contract BridgeBackBetterV1 is ITradeableExitReceiver {
 
     function onExitTransfer(
         address sender,
-        uint256 exitNum,
+        uint exitNum,
         bytes calldata data
     ) external override returns (bool) {
         // TODO: Determine which asset we're receiving and get the corresponding pool. We'll assume it's eth for now

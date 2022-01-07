@@ -15,8 +15,8 @@ contract BBBEthPoolV1 is IBBBPoolV1 {
         uint timestampUnlocked;
     }
 
-    mapping(address => Balance) balances;
-    uint availableLiq;
+    mapping(address => Balance) public balances;
+    uint public availableLiq;
 
     function distributeFee(uint amount) external override {
         // TODO

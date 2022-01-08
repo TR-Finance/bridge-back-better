@@ -1,5 +1,6 @@
 import { ethers, run } from 'hardhat';
 
+// TODO: See more complete example: https://github.com/OffchainLabs/arbitrum-tutorials/blob/master/packages/eth-withdraw/scripts/exec-viaDApp.js
 async function main() {
   await run('compile');
 
@@ -16,7 +17,7 @@ async function main() {
   console.log("BridgeBackBetterV1 deployed to:", ethPool.address);
 }
 
-// Allows for using async/await everywhere and properly handling errors.
+// Allows for using async/await everywhere and properly handling errors
 main().catch((error) => {
   console.error(error);
   process.exitCode = 1;

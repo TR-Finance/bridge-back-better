@@ -1,3 +1,6 @@
+import { Web3ReactProvider } from '@web3-react/core';
+import { Web3Provider } from '@ethersproject/providers';
+
 import TopNav from './components/nav/TopNav';
 import Withdraw from './components/withdraw/Withdraw';
 
@@ -5,6 +8,12 @@ import Withdraw from './components/withdraw/Withdraw';
 const HARDHAT_NETWORK_ID = '31337';
 
 const ERROR_CODE_TX_REJECTED_BY_USER = 4001;
+
+const getLibrary = (provider: any): Web3Provider => {
+  const library = new Web3Provider(provider);
+  library.pollingInterval = 12000;
+  return library;
+};
 
 /**
  * TODO: Make components for a page that will:
@@ -17,10 +26,10 @@ const ERROR_CODE_TX_REJECTED_BY_USER = 4001;
  */
 const Dapp = () => {
     return (
-        <>
+        <Web3ReactProvider getLibrary={getLibrary}>
             <TopNav />
             <Withdraw />
-        </>
+        </Web3ReactProvider>
     )
 };
 

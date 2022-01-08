@@ -1,19 +1,12 @@
-import { Web3ReactProvider } from '@web3-react/core';
-import { Web3Provider } from '@ethersproject/providers';
-
 import TopNav from './components/nav/TopNav';
 import Withdraw from './components/withdraw/Withdraw';
+import { useEagerConnect, useInactiveListener } from './hooks/connectorHooks';
 
 // List of network ids for deploying to other network later: https://docs.metamask.io/guide/ethereum-provider.html#properties
 const HARDHAT_NETWORK_ID = '31337';
 
 const ERROR_CODE_TX_REJECTED_BY_USER = 4001;
 
-const getLibrary = (provider: any): Web3Provider => {
-  const library = new Web3Provider(provider);
-  library.pollingInterval = 12000;
-  return library;
-};
 
 /**
  * TODO: Make components for a page that will:
@@ -25,11 +18,17 @@ const getLibrary = (provider: any): Web3Provider => {
  * 5. Let the user know it was successful
  */
 const Dapp = () => {
+    // Try to eagerly connect to an injected provider, if it exists and has granted access already
+    const triedEagerConnect = useEagerConnect();
+
+    // When there's no account connected, react to logins (broadly speaking) on the injected provider, if it exists
+    useInactiveListener(!triedEagerConnect);
+
     return (
-        <Web3ReactProvider getLibrary={getLibrary}>
+        <>
             <TopNav />
             <Withdraw />
-        </Web3ReactProvider>
+        </>
     )
 };
 

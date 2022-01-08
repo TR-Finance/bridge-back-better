@@ -2,7 +2,7 @@ import { useWeb3React, UnsupportedChainIdError } from '@web3-react/core';
 import { InjectedConnector } from '@web3-react/injected-connector';
 import { Web3Provider } from '@ethersproject/providers';
 
-import { Icon } from '@chakra-ui/react';
+import { Box, Button, Tag, TagLabel, TagLeftIcon } from '@chakra-ui/react';
 import { MdOutlineCheckCircle } from 'react-icons/md';
 
 const ConnectWallet = () => {
@@ -24,20 +24,19 @@ const ConnectWallet = () => {
     };
 
     return (
-        <div>
-        <div>ChainId: {chainId}</div>
-        {error instanceof UnsupportedChainIdError && error.message}
-        {active ? (
-            <div>
-                <Icon as={MdOutlineCheckCircle} color='green' />
-                { account }
-            </div>
-        ) : (
-            <button type="button" onClick={onClick}>
-            Connect Metmask
-            </button>
-        )}
-        </div>
+        <Box w='100%' p={1} display='flex' justifyContent={'flex-end'}>
+            {error instanceof UnsupportedChainIdError && error.message}
+            {active ? (
+                <div>
+                    <Tag size='md' key='connected wallet' variant='subtle' colorScheme='cyan' borderRadius='full'>
+                        <TagLeftIcon boxSize='15px' as={MdOutlineCheckCircle} color='green' />
+                        <TagLabel>{ account }</TagLabel>
+                    </Tag>
+                </div>
+            ) : (
+                <Button colorScheme='blue' onClick={onClick}>Connect Metmask</Button>
+            )}
+        </Box>
     );
 };
 

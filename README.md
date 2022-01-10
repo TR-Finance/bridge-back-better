@@ -25,16 +25,35 @@ cd frontend
 npm install
 npm start
 ```
-> Note: There's [an issue in `ganache-core`](https://github.com/trufflesuite/ganache-core/issues/650) that can make the `npm install` step fail. 
->
-> If you see `npm ERR! code ENOLOCAL`, try running `npm ci` instead of `npm install`.
 
 5. Open [http://localhost:3000/](http://localhost:3000/) to see the frontend. You will
 need to set Metamask to use the network for `Localhost 8545`.
 
-## Troubleshooting
+## Developer Guide (Rinkeby)
+### One-time Setup
+1. Clone the repo and install dependencies:
+```sh
+git clone git@github.com:TR-Finance/BridgeBackBetter.git
+cd BridgeBackBetter
+npm install
+```
 
-- `Invalid nonce` errors: if you are seeing this error on the `npx hardhat node`
-  console, try resetting your Metamask account. This will reset the account's
-  transaction history and also the nonce. Open Metamask, click on your account
-  followed by `Settings > Advanced > Reset Account`.
+2. Copy `.env.example` into `.env` and replace the variables with your own API keys and private keys:  
+`ETHEREUM_RINKEBY_PROVIDER_URL`: JSON-RPC endpoint for Rinkeby on Ethereum  
+`ARBITRUM_RINKEBY_PROVIDER_URL`: JSON-RPC endpoint for Rinkeby on Arbitrum  
+`RINKEBY_PRIVATE_KEY`: Private key of a wallet you want to use on Rinkeby  
+
+3. Deploy the contracts to Rinkeby on Ethereum:
+```sh
+npx hardhat run scripts/deploy.ts --network rinkeby
+```
+
+4. Add the Arbitrum Rinkeby network to MetaMask so you can see your funds there. See [here](https://developer.offchainlabs.com/docs/public_testnet) for the values to enter.
+
+### Test the Fast Withdrawal
+1. Using the same wallet you used for the `RINKEBY_PRIVATE_KEY` environment variable, bridge some testnet ETH to Arbitrum.
+
+2. Run our Hardhat task to perform the fast withdrawal:
+```sh
+npx hardhat fastWithdrawal --amount 0.0000001 --network rinkeby
+```

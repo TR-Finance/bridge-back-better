@@ -11,7 +11,15 @@ pragma solidity ^0.8.11;
  */
 interface IBBBPoolV1 {
     /**
-     * @notice Distributes a fee (paid by withdrawer) to stakers, in proportion to each staker's stake
+     * @notice Advance the withdrawal funds of a recipient immediately (don't make them wait 7 days).
+     * @param recipient The address to send funds to
+     * @param amount The amount of wei to send to the recipient
+     * @param fee The amount of wei that the pool gets to keep in exchange for advancing the withdrawal
+     */
+    function advanceWithdrawal(address recipient, uint amount, uint fee) external;
+
+    /**
+     * @notice Distribute a fee (paid by withdrawer) to stakers, in proportion to each staker's stake
      * @param amount The total fee, in wei, to distribute
      */
     function distributeFee(uint amount) external;
@@ -48,7 +56,4 @@ interface IBBBPoolV1 {
      * @return Amount of ether that the address has unstaked and can withdraw
      */
     function getWithdrawableBalance(address farmer) external view returns (uint);
-
-    /// Get the pool's total amount of ether that's locked and ready to be used.
-    function getAvailableLiq() external view returns (uint);
 }

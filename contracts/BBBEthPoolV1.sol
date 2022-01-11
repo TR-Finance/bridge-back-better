@@ -3,7 +3,10 @@ pragma solidity ^0.8.11;
 
 import "./interfaces/IBBBPoolV1.sol";
 
-/// Pool for providing ether liquidity for Arbitrum fast withdrawals.
+/**
+ * @title Pool for providing ether liquidity for Arbitrum fast withdrawals.
+ * @author Theo Ilie
+ */
 contract BBBEthPoolV1 is IBBBPoolV1 {
     struct Balance {
         uint staked;
@@ -12,11 +15,35 @@ contract BBBEthPoolV1 is IBBBPoolV1 {
 
     struct UnstakingBalance {
         uint amount;
-        uint timestampUnlocked;
+        uint timestampUnlocked; // TODO: With node operators we probably don't need a 7-day lockup anymore
     }
 
+    /// Balances of stakers
     mapping(address => Balance) public balances;
+
+    /// Amount of wei that's locked and ready to be used for fast withdrawals
     uint public availableLiq;
+
+    /// Address of the BridgeBackBetterV1 contract
+    address public protocol;
+
+    modifier onlyProtocol() {
+        require(msg.sender == protocol, "Only the B3 protocol can do this");
+        _;
+    }
+
+    constructor (address _protocol) {
+        protocol = _protocol;
+    }
+
+    // TODO: Analyze this for attacks like reentrancy
+    function advanceWithdrawal(address recipient, uint amount, uint fee) external override onlyProtocol {
+        require(availableLiq >= amount, "Not enough liquidity staked");
+        availableLiq -= amount;
+        (bool success,) = recipient.call{ value: amount - fee }("");
+        require(success, "Transfer failed");
+        // TODO: Add fee accounting to the pool
+    }
 
     function distributeFee(uint amount) external override {
         // TODO
@@ -71,9 +98,5 @@ contract BBBEthPoolV1 is IBBBPoolV1 {
                 withdrawable_ += unstaking.amount;
             }
         }
-    }
-
-    function getAvailableLiq() external view override returns (uint) {
-        return availableLiq;
     }
 }

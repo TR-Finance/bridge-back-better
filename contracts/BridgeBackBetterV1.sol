@@ -8,40 +8,86 @@ import "./interfaces/arbitrum/ITradeableExitReceiver.sol";
  * @title Contract allowing users to bridge assets from Arbitrum to mainnet faster by selling their withdrawals.
  * @author Theo Ilie
  */
-contract BridgeBackBetterV1 is ITradeableExitReceiver {
+contract BridgeBackBetterV1 {
+    struct ValidWithdrawalClaim {
+        uint amount; // In wei
+        uint withdrawalId;
+        uint timestampToSlashAt; // The block after which the user can be slashed for the pool not receiving a valid withdrawal
+    }
+
+    struct NodeOperator {
+        uint bondedBalance; // In wei
+        uint lockedBondedBalance; // Balance is locked after verifying a transaction until the transaction completes
+        ValidWithdrawalClaim[] withdrawalClaims;
+    }
+
     address public owner;
-    IBBBPoolV1[] private liqPools;
-    uint public fee; // In wei
+    IBBBPoolV1[] public liqPools;
+    mapping(address => NodeOperator) public nodeOperators;
+    uint public totalAvailableBonded; // Total bonded that's not slashed or locked
+    uint public stakerFee; // In wei
+    uint public nodeOperatorFee; // In wei
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Only the contract owner can do this");
         _;
     }
 
-    constructor(uint _fee) {
+    constructor(uint _stakerFee, uint _nodeOperatorFee) {
         owner = msg.sender;
-        fee = _fee;
+        stakerFee = _stakerFee;
+        nodeOperatorFee = _nodeOperatorFee;
     }
 
-    function setFee(uint _fee) external onlyOwner {
-        fee = _fee;
+    function setStakerFee(uint _stakerFee) external onlyOwner {
+        stakerFee = _stakerFee;
+    }
+
+    function setNodeOperatorFee(uint _nodeOperatorFee) external onlyOwner {
+        nodeOperatorFee = _nodeOperatorFee;
     }
 
     function addLiqPool(IBBBPoolV1 liqPool) external onlyOwner {
         liqPools.push(liqPool);
     }
 
-    function onExitTransfer(
-        address sender,
-        uint exitNum,
-        bytes calldata data
-    ) external override returns (bool) {
-        // TODO: Determine which asset we're receiving and get the corresponding pool. We'll assume it's eth for now
+    /// Bond ether that can be slashed for verifying a transaction that turns out to be invalid.
+    function bond() external payable {
+        nodeOperators[msg.sender].bondedBalance += msg.value;
+        totalAvailableBonded += msg.value;
+    }
 
-        // Make sure our pool has enough liquidity to buy the exit
-        // TODO: require(liqPools[0].getTotalLiq() >= exitTicketAmt, "Pool does not have enough liquidity");
+    /// Unbond `amount`.
+    function unbond(uint amount) external {
+        NodeOperator storage nodeOperator = nodeOperators[msg.sender];
+        require(nodeOperator.bondedBalance >= amount, "Insufficient unlocked balance");
 
-        // The withdrawal was transferred to us, so we can give them the exit liquidity (minus fee)
-        // TODO: payable(initialDestination).transfer(exitTicketAmt - fee);
-     }
+        nodeOperator.bondedBalance -= amount;
+        totalAvailableBonded -= amount;
+    }
+
+    /**
+     * Verify that a withdrawal is valid and claim a fee.
+     * Only callable by node operators with a high enough bond to cover losses.
+     * @dev If `withdrawId` doesn't add `amount` to the pool within 7 days then the bonder will be slashed.
+     * @param recipient The address that should receive the funds
+     * @param amount The amount that the recipient should receive
+     * @param withdrawalId The ID that was generated on Arbitrum and will be passed with a valid transaction in 7 days
+     */
+    function verifyWithdrawal(address recipient, uint amount, uint withdrawalId) external {
+        // Only node operators can verify withdrawals, and they must have enough bonded to be slashed for incorrect verification
+        require(nodeOperators[msg.sender].bondedBalance >= amount, "Not enough bonded");
+
+        // Send the recipient the money for their withdraw (minus fees)
+        liqPools[0].advanceWithdrawal(recipient, amount - nodeOperatorFee, stakerFee);
+
+        // Update the bonder's and contract's balance
+        nodeOperators[msg.sender].bondedBalance -= amount;
+        nodeOperators[msg.sender].lockedBondedBalance += amount + nodeOperatorFee;
+        totalAvailableBonded -= amount;
+
+        // Add a claim saying that there will be a withdrawal with the ID 'withdrawalId' after
+        // the challenge period (7 days) or else the node operator will be slashed
+        nodeOperators[msg.sender].withdrawalClaims.push(ValidWithdrawalClaim(amount, withdrawalId, block.timestamp + 7 days));
+    }
  }

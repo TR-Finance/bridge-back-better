@@ -9,6 +9,7 @@ import 'hardhat-gas-reporter';
 import 'solidity-coverage';
 
 import './tasks/fastWithdrawal';
+import './tasks/nodeOperator';
 
 dotenv.config();
 

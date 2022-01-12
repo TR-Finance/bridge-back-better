@@ -5,9 +5,9 @@ import { task } from 'hardhat/config';
 import * as dotenv from 'dotenv';
 import { requireEnvVariables } from '../utils';
 
-task('fastWithdrawal', 'Sells a L2->L1 withdrawal to the protocol for a fee')
-  .addParam('amount', 'The amount of ether to withdraw from Arbitrum')
-  .setAction(async ({ amount: withdrawAmountInEther }: { amount: string }, hre) => {
+task('nodeOperator', 'Locks up ether with the Ethereum contract and verifies withdrawals')
+  .addParam('bondAmount', 'The amount of ether to bond as collateral for verifying withdrawals')
+  .setAction(async ({ bondAmount: bondAmountInEther }: { bondAmount: string }, hre) => {
     dotenv.config();
     requireEnvVariables(['ETHEREUM_RINKEBY_PROVIDER_URL', 'ARBITRUM_RINKEBY_PROVIDER_URL', 'RINKEBY_PRIVATE_KEY']);
 
@@ -41,9 +41,6 @@ task('fastWithdrawal', 'Sells a L2->L1 withdrawal to the protocol for a fee')
       return;
     }
 
-    const ethPool = await ethers.getContractAt('BBBEthPoolV1', addresses.BBBEthPoolV1);
-    const mainContract = await ethers.getContractAt('BridgeBackBetterV1', addresses.BridgeBackBetterV1);
-
     // Instantiate Arbitrum and Ethereum wallets connected to providers
     console.log('Connecting to providers on ' + network.name + '...');
     const arbProvider = new providers.JsonRpcProvider(process.env.ARBITRUM_RINKEBY_PROVIDER_URL);
@@ -51,16 +48,23 @@ task('fastWithdrawal', 'Sells a L2->L1 withdrawal to the protocol for a fee')
     const arbWallet = new Wallet(process.env.RINKEBY_PRIVATE_KEY as string, arbProvider);
     const ethWallet = new Wallet(process.env.RINKEBY_PRIVATE_KEY as string, ethProvider);
 
-    // Verify that the Arbitrum wallet has enough to withdraw from
-    const arbBalanceInWei = await arbWallet.getBalance();
-    const arbBalanceInEther = parseFloat(ethers.utils.formatEther(arbBalanceInWei));
-    const withdrawAmountInWei = ethers.utils.parseEther(withdrawAmountInEther);
-    console.log(`Arbitrum balance: ${arbBalanceInEther.toFixed(4)} ETH`);
-    if (arbBalanceInWei < withdrawAmountInWei) {
-        console.warn(`Your Arbitrum wallet doesn\'t have enough to withdraw ${withdrawAmountInEther} ETH`);
-        return;
-    }
+    const withdrawalContract = await ethers.getContractAt('ArbitrumWithdrawalV1', addresses.ArbitrumWithdrawalV1, arbWallet);
+    const mainContract = await ethers.getContractAt('BridgeBackBetterV1', addresses.BridgeBackBetterV1, ethWallet);
 
+    // Bond ether with the BBB contract
+    console.log(`Bonding ${bondAmountInEther} ETH that will be slashed if an invalid tx is verified`);
+    mainContract.bond({ value: ethers.utils.parseEther(bondAmountInEther) });
+
+    // Listen for a withdrawal to happen
+    console.log('Listening for WithdrawalInitiated events on Arbitrum. Feel free to cancel execution at any time.');
+    withdrawalContract.on('WithdrawalInitiated', (sender, destination, withdrawalId, event) => {
+      console.log('Heard WithdrawalEvent! In the future, the node operator will do off-chain logic to verify the ' +
+      'Arbitrum chain and then vouch for the withdraw by calling the verifyWithdrawal function on the main BBB contract.');
+
+      console.log(`Event info: ${sender} sent to ${destination} with the ID ${withdrawalId}`);
+    });
+    
+/*
     // Send a transaction to Arbitrum to withdraw the desired amount of eth
     const arbSys = ArbSys__factory.connect('0x0000000000000000000000000000000000000064', arbWallet);
     const withdrawTx = await arbSys.withdrawEth(ethWallet.address, { value: withdrawAmountInWei });
@@ -81,7 +85,7 @@ task('fastWithdrawal', 'Sells a L2->L1 withdrawal to the protocol for a fee')
     const L1WethGateway = await ethers.getContractAt(
         'L1ArbitrumExtendedGateway',
         network.name === 'rinkeby' ? L1WethGateway_ADDRESS_RINKEBY : L1WethGateway_ADDRESS_MAINNET
-    );
+    );*/
     //const l1WethGatewayContract = L1WethGateway.attach(network.name === 'rinkeby' ? L1WethGateway_ADDRESS_RINKEBY : L1WethGateway_ADDRESS_MAINNET);
 
     // Send a transaction to buy the withdrawal that we just initiated by using the function:

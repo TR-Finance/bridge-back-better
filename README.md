@@ -18,6 +18,7 @@ npx hardhat node
 ```sh
 npx hardhat run scripts/deploy.ts --network localhost
 ```
+NOTE: This won't work because the deploy script is now hardcoded for rinkeby.
 
 4. Run the frontend after installing its dependencies:
 ```sh

@@ -10,6 +10,7 @@ import 'solidity-coverage';
 
 import './tasks/fastWithdrawal';
 import './tasks/nodeOperator';
+import './tasks/staker';
 
 dotenv.config();
 

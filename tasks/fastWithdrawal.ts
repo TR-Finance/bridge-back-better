@@ -1,5 +1,4 @@
 import { providers, Wallet } from 'ethers';
-import { ArbSys__factory, BridgeHelper } from 'arb-ts';
 import fs from 'fs';
 import { task } from 'hardhat/config';
 import * as dotenv from 'dotenv';
@@ -41,51 +40,27 @@ task('fastWithdrawal', 'Sells a L2->L1 withdrawal to the protocol for a fee')
       return;
     }
 
-    const ethPool = await ethers.getContractAt('BBBEthPoolV1', addresses.BBBEthPoolV1);
-    const mainContract = await ethers.getContractAt('BridgeBackBetterV1', addresses.BridgeBackBetterV1);
+    const withdrawalContract = await ethers.getContractAt('ArbitrumWithdrawalV1', addresses.ArbitrumWithdrawalV1);
 
-    // Instantiate Arbitrum and Ethereum wallets connected to providers
-    console.log('Connecting to providers on ' + network.name + '...');
+    // Instantiate Arbitrum wallets connected to provider
+    console.log('Connecting wallet to provider on ' + network.name + '...');
     const arbProvider = new providers.JsonRpcProvider(process.env.ARBITRUM_RINKEBY_PROVIDER_URL);
-    const ethProvider = new providers.JsonRpcProvider(process.env.ETHEREUM_RINKEBY_PROVIDER_URL);
     const arbWallet = new Wallet(process.env.RINKEBY_PRIVATE_KEY as string, arbProvider);
-    const ethWallet = new Wallet(process.env.RINKEBY_PRIVATE_KEY as string, ethProvider);
 
     // Verify that the Arbitrum wallet has enough to withdraw from
     const arbBalanceInWei = await arbWallet.getBalance();
     const arbBalanceInEther = parseFloat(ethers.utils.formatEther(arbBalanceInWei));
     const withdrawAmountInWei = ethers.utils.parseEther(withdrawAmountInEther);
-    console.log(`Arbitrum balance: ${arbBalanceInEther.toFixed(4)} ETH`);
+    console.log(`Arbitrum balance before withdrawing: ${arbBalanceInEther.toFixed(4)} ETH`);
     if (arbBalanceInWei < withdrawAmountInWei) {
         console.warn(`Your Arbitrum wallet doesn\'t have enough to withdraw ${withdrawAmountInEther} ETH`);
         return;
     }
 
-    // Send a transaction to Arbitrum to withdraw the desired amount of eth
-    const arbSys = ArbSys__factory.connect('0x0000000000000000000000000000000000000064', arbWallet);
-    const withdrawTx = await arbSys.withdrawEth(ethWallet.address, { value: withdrawAmountInWei });
-    console.log(`Transaction sent. Waiting for confirmations. ${network.name === 'rinkeby' ? 'https://rinkeby-explorer.arbitrum.io/tx/' : 'https://arbiscan.io/tx/'}${withdrawTx.hash}`);
+    // Send a transaction to our Arbitrum contract to withdraw the desired amount of eth to the liquidity pool
+    const withdrawTx = await withdrawalContract.withdraw(addresses.BBBEthPoolV1, { value: withdrawAmountInWei });
+    console.log(`Transaction sent. Waiting for confirmations. ` +
+        `${network.name === 'rinkeby' ? 'https://rinkeby-explorer.arbitrum.io/tx/' : 'https://arbiscan.io/tx/'}${withdrawTx.hash}`);
     const withdrawReceipt = await withdrawTx.wait();
-    const withdrawEventData = (BridgeHelper.getWithdrawalsInL2Transaction(withdrawReceipt))[0];
-    console.log(`Withdrawal data: ${withdrawEventData}`);
-
-    // TODO: The part below isn't working yet. It's probably best to just withdraw to the pool
-    //  instead of withdrawing and then transfefring the withdrawal to the pool
-
-    // Connect to the contract that can transfer the withdrawal from the user to our contract.
-    // This has to use any subclass of L1ArbitrumExtendedGateway because it has the transferExitAndCall function that we need.
-    // Currently the 2 subclasses of that are L1WethGateway and L1ERC20Gateway.
-    // See here for contract addresses of those: https://developer.offchainlabs.com/docs/useful_addresses
-    const L1WethGateway_ADDRESS_MAINNET = '0xd92023E9d9911199a6711321D1277285e6d4e2db';
-    const L1WethGateway_ADDRESS_RINKEBY = '0x81d1a19cf7071732D4313c75dE8DD5b8CF697eFD';
-    const L1WethGateway = await ethers.getContractAt(
-        'L1ArbitrumExtendedGateway',
-        network.name === 'rinkeby' ? L1WethGateway_ADDRESS_RINKEBY : L1WethGateway_ADDRESS_MAINNET
-    );
-    //const l1WethGatewayContract = L1WethGateway.attach(network.name === 'rinkeby' ? L1WethGateway_ADDRESS_RINKEBY : L1WethGateway_ADDRESS_MAINNET);
-
-    // Send a transaction to buy the withdrawal that we just initiated by using the function:
-    // transferExitAndCall(uint256 _exitNum, address _initialDestination, address _newDestination, bytes _newData, bytes _data)
-    //const transferTx = await L1WethGateway.transferExitAndCall(1, ethWallet.address, mainContract.address, '', '');
-    //console.log(JSON.stringify(transferTx));
+    console.log(`Withdraw confirmed. Receipt: ${withdrawReceipt}`);
 });

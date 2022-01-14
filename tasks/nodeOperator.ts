@@ -14,10 +14,11 @@ task('nodeOperator', 'Locks up ether with the Ethereum contract and verifies wit
 
     if (network.name !== 'rinkeby' && network.name !== 'mainnet') {
       console.warn(
-        'You\'re not running on Rinkeby or mainnet. The L1 contracts must be deployed to ' +
-          'either of Rinkeby or mainnet since the L2 provider only supports those 2.' +
-          'Use the option \'--network <rinkeby|mainnet>\''
+        'You\'re not running on Rinkeby or mainnet. Node operators must listen for events on ' +
+        'either Arbitrum One (mainnet) or Arbitrum Rinkeby (testnet), and they must send transactions to ' +
+        'either Ethereum mainnet or Rinkeby. Use the option \'--network <rinkeby|mainnet>\''
       );
+      return;
     }
 
     // Make sure the contracts are deployed (the deploy step saves the ABI and address to a file)

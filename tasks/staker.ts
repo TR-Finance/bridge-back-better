@@ -14,10 +14,10 @@ task('stake', 'Stakes ETH in the liquidity pool')
 
     if (network.name !== 'rinkeby' && network.name !== 'mainnet') {
       console.warn(
-        'You\'re not running on Rinkeby or mainnet. The L1 contracts must be deployed to ' +
-          'either of Rinkeby or mainnet since the L2 provider only supports those 2.' +
-          'Use the option \'--network <rinkeby|mainnet>\''
+        'You\'re not running on Rinkeby or mainnet. Staking must send transactions to ' +
+          'either Ethereum Rinkeby or mainnet. Use the option \'--network <rinkeby|mainnet>\''
       );
+      return;
     }
 
     // Make sure the contracts are deployed (the deploy step saves the ABI and address to a file)
@@ -40,19 +40,19 @@ task('stake', 'Stakes ETH in the liquidity pool')
       return;
     }
 
-    const ethPool = await ethers.getContractAt('BBBEthPoolV1', addresses.BBBEthPoolV1);
-
     // Instantiate Ethereum wallet connected to provider
     console.log('Connecting wallet to provider on ' + network.name + '...');
     const ethProvider = new providers.JsonRpcProvider(process.env.ETHEREUM_RINKEBY_PROVIDER_URL);
     const ethWallet = new Wallet(process.env.RINKEBY_PRIVATE_KEY as string, ethProvider);
+
+    const ethPool = await ethers.getContractAt('BBBEthPoolV1', addresses.BBBEthPoolV1, ethWallet);
 
     // Verify that the wallet has enough to stake
     const walletBalanceInWei = await ethWallet.getBalance();
     const walletBalanceInEther = parseFloat(ethers.utils.formatEther(walletBalanceInWei));
     const stakeAmountInWei = ethers.utils.parseEther(stakeAmountInEther);
     console.log(`Wallet balance before staking: ${walletBalanceInEther.toFixed(4)} ETH`);
-    if (walletBalanceInWei < stakeAmountInWei) {
+    if (walletBalanceInWei.lt(stakeAmountInWei)) {
         console.warn(`Your wallet doesn\'t have enough to stake ${stakeAmountInEther} ETH`);
         return;
     }
@@ -61,5 +61,5 @@ task('stake', 'Stakes ETH in the liquidity pool')
     const stakeTx = await ethPool.provideLiq({ value: stakeAmountInWei });
     console.log(`Transaction sent. Waiting for confirmations. ${network.name === 'rinkeby' ? 'https://rinkeby.etherscan.io/tx/' : 'https://etherscan.io/tx/'}${stakeTx.hash}`);
     const stakeReceipt = await stakeTx.wait();
-    console.log(`Successfully staked ${stakeAmountInEther} ETH with receipt: ${stakeReceipt}`);
+    console.log(`Successfully staked ${stakeAmountInEther} ETH with receipt: ${JSON.stringify(stakeReceipt)}`);
 });

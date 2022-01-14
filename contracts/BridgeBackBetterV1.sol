@@ -2,7 +2,6 @@
 pragma solidity ^0.8.11;
 
 import "./interfaces/IBBBPoolV1.sol";
-import "./interfaces/arbitrum/ITradeableExitReceiver.sol";
 
 /**
  * @title Contract allowing users to bridge assets from Arbitrum to mainnet faster by selling their withdrawals.

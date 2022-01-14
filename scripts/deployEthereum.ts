@@ -1,7 +1,7 @@
 import { providers, Wallet } from 'ethers';
 import fs from 'fs';
-import { ethers, run, artifacts } from 'hardhat';
-import { BBBEthPoolV1, BridgeBackBetterV1, ArbitrumWithdrawalV1 } from '../typechain';
+import { ethers, run, artifacts, network } from 'hardhat';
+import { BBBEthPoolV1, BridgeBackBetterV1 } from '../typechain';
 import * as dotenv from 'dotenv';
 import { requireEnvVariables } from '../utils';
 
@@ -11,15 +11,22 @@ const NODE_OPERATOR_FEE_WEI = '100000000000000000';
 
 async function main() {
   dotenv.config();
-  requireEnvVariables(['ETHEREUM_RINKEBY_PROVIDER_URL', 'ARBITRUM_RINKEBY_PROVIDER_URL', 'RINKEBY_PRIVATE_KEY']);
+  requireEnvVariables(['ETHEREUM_RINKEBY_PROVIDER_URL', 'RINKEBY_PRIVATE_KEY']);
+
+  if (network.name !== 'rinkeby' && network.name !== 'mainnet') {
+    console.warn(
+      'You\'re not running on Rinkeby or mainnet. The L1 contracts must be deployed to ' +
+        'either of Rinkeby or mainnet since the L2 provider only supports those 2. ' +
+        'Use the option \'--network <rinkeby|mainnet>\''
+    );
+    return;
+  }
 
   await run('compile');
 
-  // Instantiate Arbitrum and Ethereum wallets connected to providers
-  console.log('Connecting to providers on rinkeby...');
-  const arbProvider = new providers.JsonRpcProvider(process.env.ARBITRUM_RINKEBY_PROVIDER_URL);
+  // Instantiate Ethereum wallet connected to provider
+  console.log('Connecting wallet to provider on Ethereum Rinkeby...');
   const ethProvider = new providers.JsonRpcProvider(process.env.ETHEREUM_RINKEBY_PROVIDER_URL);
-  const arbWallet = new Wallet(process.env.RINKEBY_PRIVATE_KEY as string, arbProvider);
   const ethWallet = new Wallet(process.env.RINKEBY_PRIVATE_KEY as string, ethProvider);
 
   // Deploy the main contract on Ethereum
@@ -30,62 +37,50 @@ async function main() {
   console.log(`BridgeBackBetterV1 deployed to: ${mainContract.address} on Ethereum`);
   
   // Deploy contract for a liquidity pool for ether on Ethereum
-  const BBBEthPoolV1 = await ethers.getContractFactory('BBBEthPoolV1');
+  const BBBEthPoolV1 = await ethers.getContractFactory('BBBEthPoolV1', ethWallet);
   BBBEthPoolV1.connect(ethWallet);
   const ethPool = await BBBEthPoolV1.deploy(mainContract.address);
   await ethPool.deployed();
   console.log(`BBBEthPoolV1 deployed to ${ethPool.address} on Ethereum`);
 
-  // Deploy contract on Arbitrum to initiate withdrawals and emit events for them
-  const ArbitrumWithdrawalV1 = await ethers.getContractFactory('ArbitrumWithdrawalV1');
-  ArbitrumWithdrawalV1.connect(arbWallet);
-  const withdrawalContract = await ArbitrumWithdrawalV1.deploy();
-  await withdrawalContract.deployed();
-  console.log(`ArbitrumWithdrawalV1 deployed to ${withdrawalContract.address} on Arbitrum`);
-
   // Save contract artifacts and deployed addresses to use in Hardhat tasks
-  saveFrontendFiles(ethPool, mainContract, withdrawalContract);
+  saveFrontendFiles(ethPool, mainContract);
 }
 
 const saveFrontendFiles = (
   ethPool: BBBEthPoolV1,
-  mainContract: BridgeBackBetterV1,
-  withdrawalContract: ArbitrumWithdrawalV1) => {
+  mainContract: BridgeBackBetterV1) => {
   const contractsDir = __dirname + '/../frontend/src/contracts';
+  const contractsDirEth = contractsDir + '/ethereum';
 
   if (!fs.existsSync(contractsDir)) {
     fs.mkdirSync(contractsDir);
   }
+  if (!fs.existsSync(contractsDirEth)) {
+    fs.mkdirSync(contractsDirEth);
+  }
 
   // Save the address that each contract is deployed to so we can access it in Hardhat tasks later
   fs.writeFileSync(
-    contractsDir + '/contract-addresses.json',
+    contractsDirEth+ '/contract-addresses.json',
     JSON.stringify({
       BBBEthPoolV1: ethPool.address,
       BridgeBackBetterV1: mainContract.address,
-      ArbitrumWithdrawalV1: withdrawalContract
     }, undefined, 2)
   );
 
   // Write artifact for eth pool contract to frontend/src/contracts
   const BBBEthPoolV1 = artifacts.readArtifactSync('BBBEthPoolV1');
   fs.writeFileSync(
-    contractsDir + '/BBBEthPoolV1.json',
+    contractsDirEth + '/BBBEthPoolV1.json',
     JSON.stringify(BBBEthPoolV1, null, 2)
   );
 
   // Write artifact for main contract to frontend/src/contracts
   const BridgeBackBetterV1 = artifacts.readArtifactSync('BridgeBackBetterV1');
   fs.writeFileSync(
-    contractsDir + '/BridgeBackBetterV1.json',
+    contractsDirEth + '/BridgeBackBetterV1.json',
     JSON.stringify(BridgeBackBetterV1, null, 2)
-  );
-
-  // Write artifact for Arbitrum withdrawal contract to frontend/src/contracts
-  const ArbitrumWithdrawalV1 = artifacts.readArtifactSync('ArbitrumWithdrawalV1');
-  fs.writeFileSync(
-    contractsDir + '/ArbitrumWithdrawalV1.json',
-    JSON.stringify(ArbitrumWithdrawalV1, null, 2)
   );
 }
 

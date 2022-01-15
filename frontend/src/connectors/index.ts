@@ -1,6 +1,9 @@
 import { ethers } from 'ethers';
 import { InjectedConnector } from '@web3-react/injected-connector';
 import { Provider } from '@ethersproject/providers';
+import * as dotenv from 'dotenv';
+import { useWeb3React } from '@web3-react/core';
+
 
 export const injectedConnector = new InjectedConnector({
     supportedChainIds: [
@@ -20,6 +23,10 @@ export const getProvider = (chainId: number): Provider => {
             return ethers.getDefaultProvider();
         case 31337:
             return new ethers.providers.JsonRpcProvider('http://localhost:8545', { chainId: 31337, name: 'hardhat' });
+        case 4:
+            return new ethers.providers.AlchemyProvider("rinkeby", process.env.REACT_APP_ETHEREUM_RINKEBY_PROVIDER_URL);
+        case 1337:
+            return new ethers.providers.JsonRpcProvider('http://localhost:8545');
         default:
             throw new Error('Unsupported provider');
     }

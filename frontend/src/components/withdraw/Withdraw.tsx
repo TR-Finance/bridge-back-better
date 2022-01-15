@@ -1,10 +1,11 @@
-import { utils } from 'ethers';
+import {ethers, utils} from 'ethers';
 import { useWeb3React } from '@web3-react/core';
 import { Web3Provider } from '@ethersproject/providers';
 
-import { Box, Center, Heading, Text } from '@chakra-ui/react';
+import {Box, Center, Heading, Text} from '@chakra-ui/react';
 
-import { useEtherBalance } from '../../state/queries';
+import {useEtherBalance} from '../../state/queries';
+import addresses from '../../contracts/contract-addresses.json';
 
 const Withdraw = () => {
     const { chainId, account, active } = useWeb3React<Web3Provider>();
@@ -13,6 +14,34 @@ const Withdraw = () => {
 
     if (!active) {
         return <div>Please connect your wallet</div>
+    }
+
+    const Withdrawal = async () => {
+        if (chainId !== 1337 && chainId !== 42161) {
+            console.warn(
+                'You\'re not running on Arbitrum One (mainnet) or Arbitrum Rinkeby (testnet). Fast withdrawals must ' +
+                'send transactions to the protocol\'s contract on either Arbitrum-Rinkeby or Arbitrum-mainnet. ' +
+                'Use the option \'--network <arbitrumTestnet|arbitrumOne>\''
+            );
+            return;
+        }
+
+        // Make sure the contracts are deployed (the deploy step saves the ABI and address to a file)
+
+        if(!window.ethereum) { return; }
+        const provider = new ethers.providers.Web3Provider(window.ethereum as any, "any");
+
+        if ((await provider.getCode(addresses.BBBEthPoolV1)) === '0x') {
+            console.error('You need to deploy the BBBEthPoolV1 contract first');
+            return;
+        }
+        if ((await provider.getCode(addresses.BridgeBackBetterV1)) === '0x') {
+            console.error('You need to deploy the BridgeBackBetterV1 contract first');
+            return;
+        }
+
+
+
     }
 
     return (

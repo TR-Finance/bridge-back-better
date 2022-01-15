@@ -1,0 +1,87 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "L1ArbitrumExtendedGateway",
+  "sourceName": "contracts/interfaces/arbitrum/L1ArbitrumExtendedGateway.sol",
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "exitNum",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes",
+          "name": "newData",
+          "type": "bytes"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes",
+          "name": "data",
+          "type": "bytes"
+        },
+        {
+          "indexed": false,
+          "internalType": "bool",
+          "name": "madeExternalCall",
+          "type": "bool"
+        }
+      ],
+      "name": "WithdrawRedirected",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_exitNum",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "_initialDestination",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_newDestination",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes",
+          "name": "_newData",
+          "type": "bytes"
+        },
+        {
+          "internalType": "bytes",
+          "name": "_data",
+          "type": "bytes"
+        }
+      ],
+      "name": "transferExitAndCall",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x608060405234801561001057600080fd5b5061024a806100206000396000f3fe608060405234801561001057600080fd5b506004361061002b5760003560e01c8063bd5f3e7d14610030575b600080fd5b61004a60048036038101906100459190610158565b61004c565b005b50505050505050565b600080fd5b600080fd5b6000819050919050565b6100728161005f565b811461007d57600080fd5b50565b60008135905061008f81610069565b92915050565b600073ffffffffffffffffffffffffffffffffffffffff82169050919050565b60006100c082610095565b9050919050565b6100d0816100b5565b81146100db57600080fd5b50565b6000813590506100ed816100c7565b92915050565b600080fd5b600080fd5b600080fd5b60008083601f840112610118576101176100f3565b5b8235905067ffffffffffffffff811115610135576101346100f8565b5b602083019150836001820283011115610151576101506100fd565b5b9250929050565b600080600080600080600060a0888a03121561017757610176610055565b5b60006101858a828b01610080565b97505060206101968a828b016100de565b96505060406101a78a828b016100de565b955050606088013567ffffffffffffffff8111156101c8576101c761005a565b5b6101d48a828b01610102565b9450945050608088013567ffffffffffffffff8111156101f7576101f661005a565b5b6102038a828b01610102565b92509250509295989194975092955056fea2646970667358221220bf685b323496e5327aa5135dee5926462d541e05e08dbe7fc0737de9c9f02d9364736f6c634300080b0033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b506004361061002b5760003560e01c8063bd5f3e7d14610030575b600080fd5b61004a60048036038101906100459190610158565b61004c565b005b50505050505050565b600080fd5b600080fd5b6000819050919050565b6100728161005f565b811461007d57600080fd5b50565b60008135905061008f81610069565b92915050565b600073ffffffffffffffffffffffffffffffffffffffff82169050919050565b60006100c082610095565b9050919050565b6100d0816100b5565b81146100db57600080fd5b50565b6000813590506100ed816100c7565b92915050565b600080fd5b600080fd5b600080fd5b60008083601f840112610118576101176100f3565b5b8235905067ffffffffffffffff811115610135576101346100f8565b5b602083019150836001820283011115610151576101506100fd565b5b9250929050565b600080600080600080600060a0888a03121561017757610176610055565b5b60006101858a828b01610080565b97505060206101968a828b016100de565b96505060406101a78a828b016100de565b955050606088013567ffffffffffffffff8111156101c8576101c761005a565b5b6101d48a828b01610102565b9450945050608088013567ffffffffffffffff8111156101f7576101f661005a565b5b6102038a828b01610102565b92509250509295989194975092955056fea2646970667358221220bf685b323496e5327aa5135dee5926462d541e05e08dbe7fc0737de9c9f02d9364736f6c634300080b0033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

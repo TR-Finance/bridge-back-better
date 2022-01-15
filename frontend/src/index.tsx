@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 
 import { ChakraProvider } from '@chakra-ui/react'
 
-import { QueryClient, QueryClientProvider } from 'react-query';
+import {QueryClient, QueryClientProvider, useQuery} from 'react-query';
 import { ReactQueryDevtools } from 'react-query/devtools';
 
 import { Web3ReactProvider } from '@web3-react/core';

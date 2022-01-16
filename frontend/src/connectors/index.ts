@@ -11,6 +11,7 @@ export const injectedConnector = new InjectedConnector({
       4, // Rinkeby
       42, // Kovan
       42161, // Arbitrum
+      421611, // Arbitrum Testnet
       1337, // Dev (localhost:8545)
       31337, // Hardhat
     ],
@@ -27,6 +28,8 @@ export const getProvider = (chainId: number): Provider => {
             return new ethers.providers.AlchemyProvider("rinkeby", process.env.REACT_APP_ETHEREUM_RINKEBY_PROVIDER_URL);
         case 1337:
             return new ethers.providers.JsonRpcProvider('http://localhost:8545');
+        case 421611:
+            return new ethers.providers.AlchemyProvider("arbitrum", process.env.REACT_APP_ARBITRUM_RINKEBY_PROVIDER_URL)
         default:
             throw new Error('Unsupported provider');
     }

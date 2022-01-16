@@ -1,4 +1,4 @@
-import {ethers, utils} from 'ethers';
+import {ethers, providers, utils, Wallet} from 'ethers';
 import { useWeb3React } from '@web3-react/core';
 import { Web3Provider } from '@ethersproject/providers';
 
@@ -6,6 +6,7 @@ import {Box, Center, Heading, Text} from '@chakra-ui/react';
 
 import {useEtherBalance} from '../../state/queries';
 import addresses from '../../contracts/contract-addresses.json';
+import ArbitrumABI from '../../contracts/arbitrum/ArbitrumWithdrawalV1.json';
 
 const Withdraw = () => {
     const { chainId, account, active } = useWeb3React<Web3Provider>();
@@ -28,7 +29,7 @@ const Withdraw = () => {
 
         // Make sure the contracts are deployed (the deploy step saves the ABI and address to a file)
 
-        if(!window.ethereum) { return; }
+        if(!window.ethereum) { return;}
         const provider = new ethers.providers.Web3Provider(window.ethereum as any, "any");
 
         if ((await provider.getCode(addresses.BBBEthPoolV1)) === '0x') {
@@ -40,7 +41,12 @@ const Withdraw = () => {
             return;
         }
 
+        console.log('Connecting wallet to provider on ' + chainId + '...');
+        const arbProvider = new providers.JsonRpcProvider(process.env.ARBITRUM_RINKEBY_PROVIDER_URL);
+        const arbWallet = new Wallet(process.env.RINKEBY_PRIVATE_KEY as string, arbProvider);
+        const arbSigner = arbProvider.getSigner();
 
+        const withdrawalContract = await new ethers.Contract(addresses.ArbitrumWithdrawalV1, ArbitrumABI.abi, arbSigner);
 
     }
 

@@ -5,10 +5,6 @@ import { ArbitrumWithdrawalV1 } from '../typechain';
 import * as dotenv from 'dotenv';
 import { requireEnvVariables } from '../utils';
 
- // Each withdrawal gives a fee of 0.1 ether to pool stakers and 0.1 ether to node operators
-const POOL_FEE_WEI = '100000000000000000';
-const NODE_OPERATOR_FEE_WEI = '100000000000000000';
-
 async function main() {
   dotenv.config();
   requireEnvVariables(['ARBITRUM_RINKEBY_PROVIDER_URL', 'RINKEBY_PRIVATE_KEY']);
@@ -56,7 +52,7 @@ const saveFrontendFiles = (
   fs.writeFileSync(
     contractsDirArb + '/contract-addresses.json',
     JSON.stringify({
-      ArbitrumWithdrawalV1: withdrawalContract
+      ArbitrumWithdrawalV1: withdrawalContract.address
     }, undefined, 2)
   );
 

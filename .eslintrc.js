@@ -5,20 +5,35 @@ module.exports = {
     mocha: true,
     node: true,
   },
-  plugins: ["@typescript-eslint"],
+  plugins: ['@typescript-eslint', 'prettier'],
   extends: [
-    "standard",
-    "plugin:prettier/recommended",
-    "plugin:node/recommended",
+    'plugin:node/recommended',
+    'airbnb',
+    'airbnb/hooks',
+    'airbnb-typescript',
+    'prettier',
   ],
-  parser: "@typescript-eslint/parser",
+  parser: '@typescript-eslint/parser',
   parserOptions: {
-    ecmaVersion: 12,
+    ecmaVersion: 2020,
+    project: './tsconfig.json',
   },
   rules: {
-    "node/no-unsupported-features/es-syntax": [
-      "error",
-      { ignores: ["modules"] },
+    // Flag usages of ECMAScript that our Node.js version isn't compatible with
+    'node/no-unsupported-features/es-syntax': [
+      'error',
+      {
+        ignores: ['modules'],
+      },
     ],
+    // Allow importing devDependencies like ethers in non-test files
+    'import/no-extraneous-dependencies': [
+      'error',
+      {
+        devDependencies: true,
+      },
+    ],
+    // Flag prettier warnings as errors
+    'prettier/prettier': ['error'],
   },
 };

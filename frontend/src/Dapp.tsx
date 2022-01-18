@@ -2,12 +2,6 @@ import TopNav from './components/nav/TopNav';
 import Withdraw from './components/withdraw/Withdraw';
 import { useEagerConnect, useInactiveListener } from './hooks/connectorHooks';
 
-// List of network ids for deploying to other network later: https://docs.metamask.io/guide/ethereum-provider.html#properties
-const HARDHAT_NETWORK_ID = '31337';
-
-const ERROR_CODE_TX_REJECTED_BY_USER = 4001;
-
-
 /**
  * TODO: Make components for a page that will:
  * 1. Connect wallet
@@ -18,18 +12,18 @@ const ERROR_CODE_TX_REJECTED_BY_USER = 4001;
  * 5. Let the user know it was successful
  */
 const Dapp = () => {
-    // Try to eagerly connect to an injected provider, if it exists and has granted access already
-    const triedEagerConnect = useEagerConnect();
+  // Try to eagerly connect to an injected provider, if it exists and has granted access already
+  const triedEagerConnect = useEagerConnect();
 
-    // When there's no account connected, react to logins (broadly speaking) on the injected provider, if it exists
-    useInactiveListener(!triedEagerConnect);
+  // When there's no account connected, react to logins (broadly speaking) on the injected provider, if it exists
+  useInactiveListener(!triedEagerConnect);
 
-    return (
-        <>
-            <TopNav />
-            <Withdraw />
-        </>
-    )
+  return (
+    <>
+      <TopNav />
+      <Withdraw />
+    </>
+  );
 };
 
 export default Dapp;

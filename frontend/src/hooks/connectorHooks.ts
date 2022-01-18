@@ -11,7 +11,6 @@ import { injectedConnector } from '../connectors';
 import { isMobile } from '../utils/userAgent';
 import type { EthereumProvider } from '../lib/ethereum';
 
-
 /**
  * Tries to connect to an injected connector like MetaMask
  */
@@ -25,12 +24,12 @@ export const useEagerConnect = () => {
         if (isAuthorized) {
           activate(injectedConnector, undefined, true).catch(() => {
             setTried(true);
-          })
+          });
         } else {
           if (isMobile && window.ethereum) {
             activate(injectedConnector, undefined, true).catch(() => {
               setTried(true);
-            })
+            });
           } else {
             setTried(true);
           }
@@ -42,7 +41,7 @@ export const useEagerConnect = () => {
   // Wait until we get confirmation of a connection to flip the flag
   useEffect(() => {
     if (active) {
-      setTried(true)
+      setTried(true);
     }
   }, [active]);
 
@@ -64,7 +63,7 @@ export const useInactiveListener = (suppress = false) => {
       const handleChainChanged = () => {
         activate(injectedConnector, undefined, true).catch((error) => {
           console.error('Failed to activate after chain changed', error);
-        })
+        });
       };
 
       const handleAccountsChanged = (accounts: string[]) => {
@@ -72,7 +71,7 @@ export const useInactiveListener = (suppress = false) => {
         if (accounts.length > 0) {
           activate(injectedConnector, undefined, true).catch((error) => {
             console.error('Failed to activate after accounts changed', error);
-          })
+          });
         }
       };
 
@@ -84,7 +83,7 @@ export const useInactiveListener = (suppress = false) => {
           ethereum.removeListener('chainChanged', handleChainChanged);
           ethereum.removeListener('accountsChanged', handleAccountsChanged);
         }
-      }
+      };
     }
     return undefined;
   }, [active, error, suppress, activate]);

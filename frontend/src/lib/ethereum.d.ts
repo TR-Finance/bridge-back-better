@@ -1,10 +1,10 @@
 export interface EthereumProvider {
-    on?: (...args: any[]) => void
-    removeListener?: (...args: any[]) => void
+  on?: (...args: any[]) => void;
+  removeListener?: (...args: any[]) => void;
 }
 
 declare global {
-    interface Window {
-        ethereum?: EthereumProvider
-    }
+  interface Window {
+    ethereum?: EthereumProvider;
+  }
 }

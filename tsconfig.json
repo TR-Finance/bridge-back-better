@@ -7,7 +7,7 @@
     "outDir": "dist",
     "declaration": true
   },
-  "include": ["./scripts", "./tasks", "./test", "./typechain", "frontend/src"],
+  "include": ["./scripts", "./tasks", "./test", "./typechain"],
   "files": [".eslintrc.js", "./hardhat.config.ts"],
   "exclude": ["node_modules"]
 }

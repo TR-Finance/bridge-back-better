@@ -16,44 +16,48 @@ interface IBBBPoolV1 {
      * @param amount The amount of wei to send to the recipient
      * @param fee The amount of wei that the pool gets to keep in exchange for advancing the withdrawal
      */
-    function advanceWithdrawal(address recipient, uint amount, uint fee) external;
+    function advanceWithdrawal(
+        address recipient,
+        uint256 amount,
+        uint256 fee
+    ) external;
 
     /**
      * @notice Distribute a fee (paid by withdrawer) to stakers, in proportion to each staker's stake
      * @param amount The total fee, in wei, to distribute
      */
-    function distributeFee(uint amount) external;
+    function distributeFee(uint256 amount) external;
 
     /// @notice Stake ether. Unstaking takes 7 days.
     function provideLiq() external payable;
 
     /// Start unstaking `amount` wei. Will be available to withdraw in 7 days.
-    function unstake(uint amount) external;
+    function unstake(uint256 amount) external;
 
     /// Withdraw `amount` wei.
-    function withdrawBalance(uint amount) external;
-    
+    function withdrawBalance(uint256 amount) external;
+
     /**
      * @param farmer The address of the wallet to view total ether staked
      * @return Amount of ether that the address has in the pool, including ether that is unstaked or in the process of unstaking
      */
-    function getTotalBalance(address farmer) external view returns (uint);
+    function getTotalBalance(address farmer) external view returns (uint256);
 
     /**
      * @param farmer The address of the wallet to view staked ether
      * @return Amount of ether that the address has staked
      */
-    function getStakedBalance(address farmer) external view returns (uint);
+    function getStakedBalance(address farmer) external view returns (uint256);
 
     /**
      * @param farmer The address of the wallet to view unstaked ether
      * @return Amount of ether that the address has started unstaking but cannot withdraw yet
      */
-    function getUnstakedBalance(address farmer) external view returns (uint);
+    function getUnstakedBalance(address farmer) external view returns (uint256);
 
     /**
      * @param farmer The address of the wallet to view withdrawable ether
      * @return Amount of ether that the address has unstaked and can withdraw
      */
-    function getWithdrawableBalance(address farmer) external view returns (uint);
+    function getWithdrawableBalance(address farmer) external view returns (uint256);
 }

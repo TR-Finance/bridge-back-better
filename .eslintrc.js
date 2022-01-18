@@ -6,13 +6,7 @@ module.exports = {
     node: true,
   },
   plugins: ['@typescript-eslint', 'prettier'],
-  extends: [
-    'plugin:node/recommended',
-    'airbnb',
-    'airbnb/hooks',
-    'airbnb-typescript',
-    'prettier',
-  ],
+  extends: ['plugin:node/recommended', 'airbnb', 'airbnb/hooks', 'airbnb-typescript', 'prettier'],
   parser: '@typescript-eslint/parser',
   parserOptions: {
     ecmaVersion: 2020,
@@ -33,7 +27,19 @@ module.exports = {
         devDependencies: true,
       },
     ],
-    // Flag prettier warnings as errors
-    'prettier/prettier': ['error'],
+    // Disable flagging missing imports
+    'node/no-missing-import': ['off'],
+    // Warn when lines are >120 characters
+    'max-len': [
+      'warn',
+      {
+        code: 120,
+        ignoreUrls: true,
+      },
+    ],
+    // Allow multi-line strings (we don't care about older versions before ES5)
+    'no-multi-str': ['off'],
+    // Flag prettier warnings in ESLint
+    'prettier/prettier': ['warn'],
   },
 };

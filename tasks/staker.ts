@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { providers, Wallet } from 'ethers';
 import fs from 'fs';
 import { task } from 'hardhat/config';
@@ -14,15 +15,15 @@ task('stake', 'Stakes ETH in the liquidity pool')
 
     if (network.name !== 'rinkeby' && network.name !== 'mainnet') {
       console.warn(
-        'You\'re not running on Rinkeby or mainnet. Staking must send transactions to ' +
-          'either Ethereum Rinkeby or mainnet. Use the option \'--network <rinkeby|mainnet>\''
+        "You're not running on Rinkeby or mainnet. Staking must send transactions to \
+            either Ethereum Rinkeby or mainnet. Use the option '--network <rinkeby|mainnet>'",
       );
       return;
     }
 
     // Make sure the contracts are deployed (the deploy step saves the ABI and address to a file)
 
-    const addressesFile = __dirname + '/../frontend/src/contracts/contract-addresses.json';
+    const addressesFile = `${__dirname}/../frontend/src/contracts/contract-addresses.json`;
     if (!fs.existsSync(addressesFile)) {
       console.error('You need to deploy the BBBEthPoolV1 and BridgeBackBetterV1 contracts first');
       return;
@@ -41,7 +42,7 @@ task('stake', 'Stakes ETH in the liquidity pool')
     }
 
     // Instantiate Ethereum wallet connected to provider
-    console.log('Connecting wallet to provider on ' + network.name + '...');
+    console.log(`Connecting wallet to provider on ${network.name}...`);
     const ethProvider = new providers.JsonRpcProvider(process.env.ETHEREUM_RINKEBY_PROVIDER_URL);
     const ethWallet = new Wallet(process.env.RINKEBY_PRIVATE_KEY as string, ethProvider);
 
@@ -53,13 +54,17 @@ task('stake', 'Stakes ETH in the liquidity pool')
     const stakeAmountInWei = ethers.utils.parseEther(stakeAmountInEther);
     console.log(`Wallet balance before staking: ${walletBalanceInEther.toFixed(4)} ETH`);
     if (walletBalanceInWei.lt(stakeAmountInWei)) {
-        console.warn(`Your wallet doesn\'t have enough to stake ${stakeAmountInEther} ETH`);
-        return;
+      console.warn(`Your wallet doesn't have enough to stake ${stakeAmountInEther} ETH`);
+      return;
     }
 
     // Send a transaction to our pool contract to stake liquidity
     const stakeTx = await ethPool.provideLiq({ value: stakeAmountInWei });
-    console.log(`Transaction sent. Waiting for confirmations. ${network.name === 'rinkeby' ? 'https://rinkeby.etherscan.io/tx/' : 'https://etherscan.io/tx/'}${stakeTx.hash}`);
+    console.log(
+      `Transaction sent. Waiting for confirmations. ${
+        network.name === 'rinkeby' ? 'https://rinkeby.etherscan.io/tx/' : 'https://etherscan.io/tx/'
+      }${stakeTx.hash}`,
+    );
     const stakeReceipt = await stakeTx.wait();
     console.log(`Successfully staked ${stakeAmountInEther} ETH with receipt: ${JSON.stringify(stakeReceipt)}`);
-});
+  });

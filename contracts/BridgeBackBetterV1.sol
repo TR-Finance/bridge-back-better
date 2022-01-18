@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.11;
 
-import "./interfaces/IBBBPoolV1.sol";
+import './interfaces/IBBBPoolV1.sol';
 
 /**
  * @title Contract allowing users to bridge assets from Arbitrum to mainnet faster by selling their withdrawals.
@@ -9,40 +9,40 @@ import "./interfaces/IBBBPoolV1.sol";
  */
 contract BridgeBackBetterV1 {
     struct ValidWithdrawalClaim {
-        uint amount; // In wei
-        uint withdrawalId;
-        uint timestampToSlashAt; // The block after which the user can be slashed for the pool not receiving a valid withdrawal
+        uint256 amount; // In wei
+        uint256 withdrawalId;
+        uint256 timestampToSlashAt; // The block after which the user can be slashed for the pool not receiving a valid withdrawal
     }
 
     struct NodeOperator {
-        uint bondedBalance; // In wei
-        uint lockedBondedBalance; // Balance is locked after verifying a transaction until the transaction completes
+        uint256 bondedBalance; // In wei
+        uint256 lockedBondedBalance; // Balance is locked after verifying a transaction until the transaction completes
         ValidWithdrawalClaim[] withdrawalClaims;
     }
 
     address public owner;
     IBBBPoolV1[] public liqPools;
     mapping(address => NodeOperator) public nodeOperators;
-    uint public totalAvailableBonded; // Total bonded that's not slashed or locked
-    uint public stakerFee; // In wei
-    uint public nodeOperatorFee; // In wei
+    uint256 public totalAvailableBonded; // Total bonded that's not slashed or locked
+    uint256 public stakerFee; // In wei
+    uint256 public nodeOperatorFee; // In wei
 
     modifier onlyOwner() {
-        require(msg.sender == owner, "Only the contract owner can do this");
+        require(msg.sender == owner, 'Only the contract owner can do this');
         _;
     }
 
-    constructor(uint _stakerFee, uint _nodeOperatorFee) {
+    constructor(uint256 _stakerFee, uint256 _nodeOperatorFee) {
         owner = msg.sender;
         stakerFee = _stakerFee;
         nodeOperatorFee = _nodeOperatorFee;
     }
 
-    function setStakerFee(uint _stakerFee) external onlyOwner {
+    function setStakerFee(uint256 _stakerFee) external onlyOwner {
         stakerFee = _stakerFee;
     }
 
-    function setNodeOperatorFee(uint _nodeOperatorFee) external onlyOwner {
+    function setNodeOperatorFee(uint256 _nodeOperatorFee) external onlyOwner {
         nodeOperatorFee = _nodeOperatorFee;
     }
 
@@ -57,9 +57,9 @@ contract BridgeBackBetterV1 {
     }
 
     /// Unbond `amount`.
-    function unbond(uint amount) external {
+    function unbond(uint256 amount) external {
         NodeOperator storage nodeOperator = nodeOperators[msg.sender];
-        require(nodeOperator.bondedBalance >= amount, "Insufficient unlocked balance");
+        require(nodeOperator.bondedBalance >= amount, 'Insufficient unlocked balance');
 
         nodeOperator.bondedBalance -= amount;
         totalAvailableBonded -= amount;
@@ -73,9 +73,13 @@ contract BridgeBackBetterV1 {
      * @param amount The amount that the recipient should receive
      * @param withdrawalId The ID that was generated on Arbitrum and will be passed with a valid transaction in 7 days
      */
-    function verifyWithdrawal(address recipient, uint amount, uint withdrawalId) external {
+    function verifyWithdrawal(
+        address recipient,
+        uint256 amount,
+        uint256 withdrawalId
+    ) external {
         // Only node operators can verify withdrawals, and they must have enough bonded to be slashed for incorrect verification
-        require(nodeOperators[msg.sender].bondedBalance >= amount, "Not enough bonded");
+        require(nodeOperators[msg.sender].bondedBalance >= amount, 'Not enough bonded');
 
         // Send the recipient the money for their withdraw (minus fees)
         liqPools[0].advanceWithdrawal(recipient, amount - nodeOperatorFee, stakerFee);
@@ -87,6 +91,8 @@ contract BridgeBackBetterV1 {
 
         // Add a claim saying that there will be a withdrawal with the ID 'withdrawalId' after
         // the challenge period (7 days) or else the node operator will be slashed
-        nodeOperators[msg.sender].withdrawalClaims.push(ValidWithdrawalClaim(amount, withdrawalId, block.timestamp + 7 days));
+        nodeOperators[msg.sender].withdrawalClaims.push(
+            ValidWithdrawalClaim(amount, withdrawalId, block.timestamp + 7 days)
+        );
     }
- }
+}

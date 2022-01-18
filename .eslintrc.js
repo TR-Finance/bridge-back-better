@@ -6,7 +6,7 @@ module.exports = {
     node: true,
   },
   plugins: ['@typescript-eslint', 'prettier'],
-  extends: ['plugin:node/recommended', 'airbnb', 'airbnb/hooks', 'airbnb-typescript', 'prettier'],
+  extends: ['plugin:node/recommended', 'airbnb-base', 'prettier'],
   parser: '@typescript-eslint/parser',
   parserOptions: {
     ecmaVersion: 2020,
@@ -39,7 +39,14 @@ module.exports = {
     ],
     // Allow multi-line strings (we don't care about older versions before ES5)
     'no-multi-str': ['off'],
-    // Flag prettier warnings in ESLint
+    // It doesn't recognize when "directory/index.ts" and we're importing "directory", so we turn it off
+    'import/extensions': ['off'],
+    // Flag prettier warnings
     'prettier/prettier': ['warn'],
+  },
+  settings: {
+    'import/resolver': {
+      typescript: {},
+    },
   },
 };

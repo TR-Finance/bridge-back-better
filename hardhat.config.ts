@@ -19,15 +19,14 @@ const config: HardhatUserConfig = {
   networks: {
     rinkeby: {
       url: process.env.ETHEREUM_RINKEBY_PROVIDER_URL || '',
-      accounts:
-        process.env.RINKEBY_PRIVATE_KEY !== undefined ? [process.env.RINKEBY_PRIVATE_KEY] : [],
+      accounts: process.env.RINKEBY_PRIVATE_KEY !== undefined ? [process.env.RINKEBY_PRIVATE_KEY] : [],
     },
     arbitrumOne: {
       url: process.env.ARBITRUM_ONE_PROVIDER_URL || '',
     },
     arbitrumTestnet: {
       url: process.env.ARBITRUM_RINKEBY_PROVIDER_URL || '',
-    }
+    },
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,
@@ -39,7 +38,7 @@ const config: HardhatUserConfig = {
       rinkeby: process.env.ETHERSCAN_API_KEY,
       arbitrumOne: process.env.ARBISCAN_API_KEY,
       arbitrumTestnet: process.env.ARBISCAN_API_KEY,
-    }
+    },
   },
 };
 

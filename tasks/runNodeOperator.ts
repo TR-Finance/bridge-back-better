@@ -1,15 +1,19 @@
-/* eslint-disable no-console */
 import { providers, Wallet } from 'ethers';
-import fs from 'fs';
 import { task } from 'hardhat/config';
 import * as dotenv from 'dotenv';
 import { requireEnvVariables } from '../utils';
 
-task('nodeOperator', 'Locks up ether with the Ethereum contract and verifies withdrawals')
+task('runNodeOperator', 'Locks up ether with the Ethereum contract and verifies withdrawals')
   .addParam('bondAmount', 'The amount of ether to bond as collateral for verifying withdrawals')
   .setAction(async ({ bondAmount: bondAmountInEther }: { bondAmount: string }, hre) => {
     dotenv.config();
-    requireEnvVariables(['ETHEREUM_RINKEBY_PROVIDER_URL', 'ARBITRUM_RINKEBY_PROVIDER_URL', 'RINKEBY_PRIVATE_KEY']);
+    requireEnvVariables([
+      'ETHEREUM_RINKEBY_PROVIDER_URL',
+      'ARBITRUM_RINKEBY_PROVIDER_URL',
+      'ADDRESS_RINKEBY_BridgeBackBetterV1',
+      'ADDRESS_RINKEBY_ArbitrumWithdrawalV1',
+      'RINKEBY_PRIVATE_KEY',
+    ]);
 
     const { ethers, network } = hre;
 
@@ -22,26 +26,6 @@ task('nodeOperator', 'Locks up ether with the Ethereum contract and verifies wit
       return;
     }
 
-    // Make sure the contracts are deployed (the deploy step saves the ABI and address to a file)
-
-    const addressesFile = `${__dirname}/../frontend/src/contracts/contract-addresses.json`;
-    if (!fs.existsSync(addressesFile)) {
-      console.error('You need to deploy the BBBEthPoolV1 and BridgeBackBetterV1 contracts first');
-      return;
-    }
-
-    const addressesJson = fs.readFileSync(addressesFile);
-    const addresses = JSON.parse(addressesJson.toString());
-
-    if ((await ethers.provider.getCode(addresses.BBBEthPoolV1)) === '0x') {
-      console.error('You need to deploy the BBBEthPoolV1 contract first');
-      return;
-    }
-    if ((await ethers.provider.getCode(addresses.BridgeBackBetterV1)) === '0x') {
-      console.error('You need to deploy the BridgeBackBetterV1 contract first');
-      return;
-    }
-
     // Instantiate Arbitrum and Ethereum wallets connected to providers
     console.log(`Connecting to providers on ${network.name}...`);
     const arbProvider = new providers.JsonRpcProvider(process.env.ARBITRUM_RINKEBY_PROVIDER_URL);
@@ -51,10 +35,14 @@ task('nodeOperator', 'Locks up ether with the Ethereum contract and verifies wit
 
     const withdrawalContract = await ethers.getContractAt(
       'ArbitrumWithdrawalV1',
-      addresses.ArbitrumWithdrawalV1,
+      process.env.ADDRESS_RINKEBY_ArbitrumWithdrawalV1 as string,
       arbWallet,
     );
-    const mainContract = await ethers.getContractAt('BridgeBackBetterV1', addresses.BridgeBackBetterV1, ethWallet);
+    const mainContract = await ethers.getContractAt(
+      'BridgeBackBetterV1',
+      process.env.ADDRESS_RINKEBY_BridgeBackBetterV1 as string,
+      ethWallet,
+    );
 
     // Bond ether with the BBB contract
     console.log(`Bonding ${bondAmountInEther} ETH that will be slashed if an invalid tx is verified`);
@@ -73,6 +61,5 @@ task('nodeOperator', 'Locks up ether with the Ethereum contract and verifies wit
       console.log('Proceeding with program as if the chain were successfully verified...');
 
       await mainContract.verifyWithdrawal(destination, amount, withdrawalId);
-      console.log('');
     });
   });

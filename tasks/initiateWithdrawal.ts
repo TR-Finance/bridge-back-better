@@ -1,15 +1,18 @@
-/* eslint-disable no-console */
 import { providers, Wallet } from 'ethers';
-import fs from 'fs';
 import { task } from 'hardhat/config';
 import * as dotenv from 'dotenv';
 import { requireEnvVariables } from '../utils';
 
-task('fastWithdrawal', 'Sells a L2->L1 withdrawal to the protocol for a fee')
+task('initiateWithdrawal', 'Initiates a L2->L1 (Arbitrum->Ethereum) withdrawal and sells it to the protocol for a fee')
   .addParam('amount', 'The amount of ether to withdraw from Arbitrum')
   .setAction(async ({ amount: withdrawAmountInEther }: { amount: string }, hre) => {
     dotenv.config();
-    requireEnvVariables(['ARBITRUM_RINKEBY_PROVIDER_URL', 'RINKEBY_PRIVATE_KEY']);
+    requireEnvVariables([
+      'ARBITRUM_RINKEBY_PROVIDER_URL',
+      'ADDRESS_RINKEBY_BridgeBackBetterV1',
+      'ADDRESS_RINKEBY_ArbitrumWithdrawalV1',
+      'RINKEBY_PRIVATE_KEY',
+    ]);
 
     const { ethers, network } = hre;
 
@@ -22,34 +25,14 @@ task('fastWithdrawal', 'Sells a L2->L1 withdrawal to the protocol for a fee')
       return;
     }
 
-    // Make sure the contracts are deployed (the deploy step saves the ABI and address to a file)
-
-    const addressesFile = `${__dirname}/../frontend/src/contracts/ethereum/contract-addresses.json`;
-    if (!fs.existsSync(addressesFile)) {
-      console.error('You need to deploy the BBBEthPoolV1 and BridgeBackBetterV1 contracts first');
-      return;
-    }
-
-    const addressesJson = fs.readFileSync(addressesFile);
-    const addresses = JSON.parse(addressesJson.toString());
-
-    if ((await ethers.provider.getCode(addresses.BBBEthPoolV1)) === '0x') {
-      console.error('You need to deploy the BBBEthPoolV1 contract first');
-      return;
-    }
-    if ((await ethers.provider.getCode(addresses.BridgeBackBetterV1)) === '0x') {
-      console.error('You need to deploy the BridgeBackBetterV1 contract first');
-      return;
-    }
-
-    // Instantiate Arbitrum wallets connected to provider
+    // Instantiate Arbitrum wallet connected to provider
     console.log(`Connecting wallet to provider on ${network.name}...`);
     const arbProvider = new providers.JsonRpcProvider(process.env.ARBITRUM_RINKEBY_PROVIDER_URL);
     const arbWallet = new Wallet(process.env.RINKEBY_PRIVATE_KEY as string, arbProvider);
 
     const withdrawalContract = await ethers.getContractAt(
       'ArbitrumWithdrawalV1',
-      addresses.ArbitrumWithdrawalV1,
+      process.env.ADDRESS_RINKEBY_ArbitrumWithdrawalV1 as string,
       arbWallet,
     );
 
@@ -64,7 +47,9 @@ task('fastWithdrawal', 'Sells a L2->L1 withdrawal to the protocol for a fee')
     }
 
     // Send a transaction to our Arbitrum contract to withdraw the desired amount of eth to the liquidity pool
-    const withdrawTx = await withdrawalContract.withdraw(addresses.BBBEthPoolV1, { value: withdrawAmountInWei });
+    const withdrawTx = await withdrawalContract.withdraw(process.env.ADDRESS_RINKEBY_BridgeBackBetterV1 as string, {
+      value: withdrawAmountInWei,
+    });
     console.log(
       `Transaction sent. Waiting for confirmations. ` +
         `${

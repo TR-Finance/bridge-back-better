@@ -8,9 +8,9 @@ import '@typechain/hardhat';
 import 'hardhat-gas-reporter';
 import 'solidity-coverage';
 
-import './tasks/fastWithdrawal';
-import './tasks/nodeOperator';
-import './tasks/staker';
+import './tasks/initiateWithdrawal';
+import './tasks/runNodeOperator';
+import './tasks/delegateEther';
 
 dotenv.config();
 

@@ -43,6 +43,10 @@ module.exports = {
     'import/extensions': ['off'],
     // Flag prettier warnings
     'prettier/prettier': ['warn'],
+    // We print to console quite a bit intentionally
+    'no-console': 'off',
+    // Some best practices slow down development and should be warnings instead of errors
+    'no-unused-vars': 'warn',
   },
   settings: {
     'import/resolver': {

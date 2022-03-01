@@ -11,6 +11,7 @@ import 'solidity-coverage';
 import './tasks/initiateWithdrawal';
 import './tasks/runNodeOperator';
 import './tasks/delegateEther';
+import './tasks/claimWithdrawal';
 
 dotenv.config();
 

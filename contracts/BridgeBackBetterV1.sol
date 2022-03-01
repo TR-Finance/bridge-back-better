@@ -2,7 +2,7 @@
 pragma solidity ^0.8.11;
 
 /**
- * @title Contract allowing users to bridge assets from Arbitrum to mainnet faster by selling their withdrawals.
+ * @title Contract allowing users to bridge ether from Arbitrum to mainnet faster by selling their withdrawals.
  * @author Theo Ilie
  */
 contract BridgeBackBetterV1 {
@@ -23,7 +23,10 @@ contract BridgeBackBetterV1 {
         bool paused;
         uint256 bondedBalance; // In wei
         uint256 timestampUnlocked; // The block after which the node operator can withdraw their bond
-        uint256 delegatedBalance; // In wei
+        uint256 delegatedBalanceAvailable; // The balance, in wei, that can be used to advance withdrawals
+        uint256 delegatedBalanceInUse; // The balance, in wei, that was used to advance withdrawals and is waiting to be paid back
+        uint256 nodeOperatorFeesAccrued; // In wei
+        uint256 delegatorFeesAccrued; // In wei
         mapping(address => Delegator) delegators;
         ValidWithdrawalClaim[] withdrawalClaims;
     }
@@ -32,7 +35,7 @@ contract BridgeBackBetterV1 {
     mapping(address => NodeOperator) public nodeOperators;
     uint256 public totalAvailableBonded; // Total bonded that's not slashed or locked
     uint256 public totalAvailableDelegated; // Total stake delegated that's not slashed or locked
-    uint256 public stakerFee; // In wei
+    uint256 public delegatorFee; // In wei
     uint256 public nodeOperatorFee; // In wei
 
     modifier onlyOwner() {
@@ -40,14 +43,14 @@ contract BridgeBackBetterV1 {
         _;
     }
 
-    constructor(uint256 _stakerFee, uint256 _nodeOperatorFee) {
+    constructor(uint256 _delegatorFee, uint256 _nodeOperatorFee) {
         owner = msg.sender;
-        stakerFee = _stakerFee;
+        delegatorFee = _delegatorFee;
         nodeOperatorFee = _nodeOperatorFee;
     }
 
-    function setStakerFee(uint256 _stakerFee) external onlyOwner {
-        stakerFee = _stakerFee;
+    function setDelegatorFee(uint256 _delegatorFee) external onlyOwner {
+        delegatorFee = _delegatorFee;
     }
 
     function setNodeOperatorFee(uint256 _nodeOperatorFee) external onlyOwner {
@@ -59,6 +62,8 @@ contract BridgeBackBetterV1 {
      * @notice The ether sent here can't be withdrawn for 7 days.
      */
     function bond() external payable {
+        require(msg.value > 0, 'Must bond >0');
+
         nodeOperators[msg.sender].paused = false;
         nodeOperators[msg.sender].bondedBalance += msg.value;
         nodeOperators[msg.sender].timestampUnlocked = block.timestamp + COOLDOWN_PERIOD;
@@ -73,6 +78,7 @@ contract BridgeBackBetterV1 {
         NodeOperator storage nodeOperator = nodeOperators[msg.sender];
 
         require(nodeOperator.withdrawalClaims.length == 0, 'Must have no claims');
+        require(nodeOperator.timestampUnlocked > block.timestamp, 'Bond locked');
 
         nodeOperators[msg.sender].paused = true;
         uint256 amount = nodeOperator.bondedBalance;
@@ -86,21 +92,88 @@ contract BridgeBackBetterV1 {
     /**
      * Delegate ether to a node operator to share in their rewards.
      * @notice The ether sent here can't be withdrawn for 7 days.
-     *         Node operators can steal funds if they have more ether delegated than bonded.
-     * @param nodeOperator The address of the node operator to delegate ether to
+     * @param nodeOperatorAddress The address of the node operator to delegate ether to
      */
-    function delegate(address nodeOperator) external payable {
-        // TODO
+    function delegate(address nodeOperatorAddress) external payable {
+        require(msg.value > 0, 'Must delegate >0');
+
+        NodeOperator storage nodeOperator = nodeOperators[nodeOperatorAddress];
+        require(!nodeOperator.paused, 'Node operator not accepting delegations');
+
+        // If a node operator has more ethers delegated than bonded, then they can vouch for an invalid
+        // withdrawal to their own address, causing delegated funds to go to them and only being slashed for their (lower) bond
+        require(
+            nodeOperator.bondedBalance >=
+                nodeOperator.delegatedBalanceAvailable + nodeOperator.delegatedBalanceInUse + msg.value,
+            'Bonded must be > delegated'
+        );
+
+        totalAvailableDelegated += msg.value;
+        nodeOperator.delegatedBalanceAvailable += msg.value;
+        nodeOperator.delegators[msg.sender].balance += msg.value;
+        nodeOperator.delegators[msg.sender].timestampUnlocked = block.timestamp + COOLDOWN_PERIOD;
     }
 
-    function undelegate(address nodeOperator) external {
-        // TODO
+    /**
+     * Undelegate the full amount that the sending address currently has delegated to the provided node operator.
+     * @param nodeOperatorAddress The node operator that you delegated ether to
+     */
+    function undelegate(address nodeOperatorAddress) external {
+        NodeOperator storage nodeOperator = nodeOperators[nodeOperatorAddress];
+        Delegator storage delegator = nodeOperator.delegators[msg.sender];
+        uint256 amount = delegator.balance;
+
+        require(delegator.timestampUnlocked > block.timestamp, 'Balance temporarily locked');
+        require(
+            nodeOperator.delegatedBalanceAvailable >= delegator.balance,
+            'Balance is waiting to be repaid via slow withdrawal or bond slashing'
+        );
+
+        // Subtract balance in internal accounting first to make attacks less feasible
+        delegator.balance = 0;
+        nodeOperator.delegatedBalanceAvailable -= amount;
+        totalAvailableDelegated -= amount;
+
+        // Calculate fees owed as a percentage of total delegated to node operator
+        uint256 total = nodeOperator.delegatedBalanceAvailable + nodeOperator.delegatedBalanceInUse + amount;
+        uint256 delegatorPortion = amount / total;
+        uint256 feesOwedToDelegator = delegatorPortion * nodeOperator.delegatorFeesAccrued;
+
+        // Perform internal accounting for fee payout
+        nodeOperator.delegatorFeesAccrued -= feesOwedToDelegator;
+
+        // Send balance + fees to the delegator
+        (bool success, ) = msg.sender.call{value: amount + feesOwedToDelegator}('');
+        require(success, 'Undelegating failed');
     }
+
+    /**
+     * Claims any withdrawals that are owed to the node operator who calls this function.
+     * If any withdrawal claims are expired, then the node operator who calls this will have their balance slashed.
+     */
+    /*function claimWithdrawals() external {
+        NodeOperator storage nodeOperator = nodeOperators[msg.sender];
+        for (uint256 i = 0; i < nodeOperator.withdrawalClaims.length; i++) {
+            ValidWithdrawalClaim storage claim = nodeOperator.withdrawalClaims[i];
+
+            if (claim.timestampToSlashAt < block.timestamp) {
+                continue;
+            }
+
+            if (claim.withdrawalId == somethingValid) {
+                // TODO: Find out how Ethereum gets the withdrawal from Arb. Must be the function that receives payment
+                // Reward correct validations
+            } else {
+                // Slash incorrect validations
+                nodeOperator.bondedBalance -= Math.max(claim.amount, nodeOperator.bondedBalance);
+            }
+        }
+    }*/
 
     /**
      * Verify that a withdrawal is valid and claim a fee.
      * Only callable by node operators with a high enough bond to cover losses.
-     * @dev If `withdrawId` doesn't add `amount` to the pool within 7 days then the bonder will be slashed.
+     * @notice If a transaction with data `withdrawId` doesn't add `amount` to the pool within 7 days then the bonder will be slashed.
      * @param recipient The address that should receive the funds
      * @param amount The amount that the recipient should receive
      * @param withdrawalId The ID that was generated on Arbitrum and will be passed with a valid transaction in 7 days
@@ -112,20 +185,25 @@ contract BridgeBackBetterV1 {
     ) external {
         NodeOperator storage nodeOperator = nodeOperators[msg.sender];
         // Node operator must have enough delegated to provide an advance on the withdrawal
-        require(nodeOperator.delegatedBalance >= amount, 'Not enough delegated');
+        require(nodeOperator.delegatedBalanceAvailable >= amount, 'Not enough delegated and not in use');
 
-        // Take the money from the node operator's delegated amount first
-        nodeOperator.delegatedBalance -= amount;
+        // Take the ether from the node operator's delegated amount
+        totalAvailableDelegated -= amount;
+        nodeOperator.delegatedBalanceAvailable -= amount;
 
-        // Send the recipient the money for their withdraw (minus fees)
-        (bool success, ) = recipient.call{value: amount - nodeOperatorFee - stakerFee}('');
+        // Lock the node operator's bond for 7 days so they can't withdraw if this verification was invalid
+        nodeOperator.timestampUnlocked = block.timestamp + COOLDOWN_PERIOD;
+
+        // Send the recipient the ether for their withdraw (minus fees)
+        (bool success, ) = recipient.call{value: amount - nodeOperatorFee - delegatorFee}('');
         require(success, 'Transfer failed');
 
-        // TODO: Add fee accounting separately for node operator and its delegators
+        // Mark the delegated balance as in-use
+        nodeOperator.delegatedBalanceInUse += amount;
 
-        // Update the node operator's delegated balance and the contract's balance
-        nodeOperator.lockedDelegatedBalance += amount;
-        totalAvailableDelegated -= amount;
+        // Award fees
+        nodeOperator.delegatorFeesAccrued += delegatorFee;
+        nodeOperator.nodeOperatorFeesAccrued += nodeOperatorFee;
 
         // Add a claim saying that there will be a withdrawal with the ID 'withdrawalId' after
         // the challenge period (7 days) or else the node operator's bond will be slashed

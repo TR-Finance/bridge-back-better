@@ -1,38 +1,7 @@
-/* eslint-disable no-console */
 import { providers, Wallet } from 'ethers';
-import fs from 'fs';
-import { ethers, run, artifacts, network } from 'hardhat';
+import { ethers, run, network } from 'hardhat';
 import * as dotenv from 'dotenv';
-import { ArbitrumWithdrawalV1 as ArbitrumWithdrawalV1Type } from '../typechain';
 import { requireEnvVariables } from '../utils';
-
-const saveFrontendFiles = (withdrawalContract: ArbitrumWithdrawalV1Type) => {
-  const contractsDir = `${__dirname}/../frontend/src/contracts`;
-  const contractsDirArb = `${contractsDir}/arbitrum`;
-
-  if (!fs.existsSync(contractsDir)) {
-    fs.mkdirSync(contractsDir);
-  }
-  if (!fs.existsSync(contractsDirArb)) {
-    fs.mkdirSync(contractsDirArb);
-  }
-
-  // Save the address that each contract is deployed to so we can access it in Hardhat tasks later
-  fs.writeFileSync(
-    `${contractsDirArb}/contract-addresses.json`,
-    JSON.stringify(
-      {
-        ArbitrumWithdrawalV1: withdrawalContract.address,
-      },
-      undefined,
-      2,
-    ),
-  );
-
-  // Write artifact for Arbitrum withdrawal contract to frontend/src/contracts
-  const ArbitrumWithdrawalV1 = artifacts.readArtifactSync('ArbitrumWithdrawalV1');
-  fs.writeFileSync(`${contractsDirArb}/ArbitrumWithdrawalV1.json`, JSON.stringify(ArbitrumWithdrawalV1, null, 2));
-};
 
 async function main() {
   dotenv.config();
@@ -60,9 +29,6 @@ async function main() {
   const withdrawalContract = await ArbitrumWithdrawalV1.deploy();
   await withdrawalContract.deployed();
   console.log(`ArbitrumWithdrawalV1 deployed to ${withdrawalContract.address} on Arbitrum`);
-
-  // Save contract artifacts and deployed addresses to use in Hardhat tasks
-  saveFrontendFiles(withdrawalContract);
 }
 
 // Allows for using async/await everywhere and properly handling errors

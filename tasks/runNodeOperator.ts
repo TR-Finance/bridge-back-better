@@ -51,10 +51,9 @@ task('runNodeOperator', 'Locks up ether with the Ethereum contract and verifies 
     });
 
     // Listen for a withdrawal to happen
-    console.log('Listening for WithdrawalInitiated events on Arbitrum. Feel free to cancel execution at any time.');
-    withdrawalContract.on('WithdrawalInitiated', async (sender, destination, amount, withdrawalId, event) => {
+    withdrawalContract.on('WithdrawInitiated', async (sender, destination, amount, withdrawalId, event) => {
       console.log(
-        'Heard WithdrawalEvent! This is when the node operator would perform an off-chain verification ' +
+        'Heard WithdrawInitiated event! This is when the node operator would perform an off-chain verification ' +
           'of the Arbitrum chain before proceeding',
       );
       console.log(`Event info: ${sender} sent to ${destination} with the ID ${withdrawalId}. Event: ${event}`);
@@ -62,4 +61,18 @@ task('runNodeOperator', 'Locks up ether with the Ethereum contract and verifies 
 
       await mainContract.verifyWithdrawal(destination, amount, withdrawalId);
     });
+
+    console.log(
+      `Listening for new WithdrawInitiated events on Arbitrum and for completed withdrawals \
+      to claim on Ethereum. Feel free to cancel execution at any time.`,
+    );
+
+    // Check every minute for a valid withdrawal that's ready to claim on mainnet
+    // eslint-disable-next-line no-constant-condition
+    //while (true) {
+    // eslint-disable-next-line no-await-in-loop
+    const nodeOperator = await mainContract.nodeOperators(ethWallet.address);
+    console.log(nodeOperator);
+    // TODO: Retrieve list of withdrawals from nodeOperator and check if any have been active for 7+ days
+    //}
   });

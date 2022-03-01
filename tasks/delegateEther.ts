@@ -51,7 +51,7 @@ task('delegateEther', 'Delegates ether to a node operator, locking the ETH for 7
       }
 
       // Send a transaction to main contract to delegate ether to node operator
-      const delegateTx = await mainContract.delegate({ nodeOperator: nodeOperatorAddress, value: delegateAmountInWei });
+      const delegateTx = await mainContract.delegate(nodeOperatorAddress, { value: delegateAmountInWei });
       console.log(
         `Transaction sent. Waiting for confirmations. ${
           network.name === 'rinkeby' ? 'https://rinkeby.etherscan.io/tx/' : 'https://etherscan.io/tx/'

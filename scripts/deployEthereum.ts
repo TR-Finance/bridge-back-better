@@ -1,47 +1,11 @@
-/* eslint-disable no-console */
 import { providers, Wallet } from 'ethers';
-import fs from 'fs';
-import { ethers, run, artifacts, network } from 'hardhat';
+import { ethers, run, network } from 'hardhat';
 import * as dotenv from 'dotenv';
-import { BBBEthPoolV1 as BBBEthPoolV1Type, BridgeBackBetterV1 as BridgeBackBetterV1Type } from '../typechain';
 import { requireEnvVariables } from '../utils';
 
-// Each withdrawal gives a fee of 0.1 ether to pool stakers and 0.1 ether to node operators
-const POOL_FEE_WEI = '100000000000000000';
+// Each withdrawal gives a fee of 0.1 ether to delegators and 0.1 ether to node operators
+const DELEGATOR_FEE_WEI = '100000000000000000';
 const NODE_OPERATOR_FEE_WEI = '100000000000000000';
-
-const saveFrontendFiles = (ethPool: BBBEthPoolV1Type, mainContract: BridgeBackBetterV1Type) => {
-  const contractsDir = `${__dirname}/../frontend/src/contracts`;
-  const contractsDirEth = `${contractsDir}/ethereum`;
-
-  if (!fs.existsSync(contractsDir)) {
-    fs.mkdirSync(contractsDir);
-  }
-  if (!fs.existsSync(contractsDirEth)) {
-    fs.mkdirSync(contractsDirEth);
-  }
-
-  // Save the address that each contract is deployed to so we can access it in Hardhat tasks later
-  fs.writeFileSync(
-    `${contractsDirEth}/contract-addresses.json`,
-    JSON.stringify(
-      {
-        BBBEthPoolV1: ethPool.address,
-        BridgeBackBetterV1: mainContract.address,
-      },
-      undefined,
-      2,
-    ),
-  );
-
-  // Write artifact for eth pool contract to frontend/src/contracts
-  const BBBEthPoolV1 = artifacts.readArtifactSync('BBBEthPoolV1');
-  fs.writeFileSync(`${contractsDirEth}/BBBEthPoolV1.json`, JSON.stringify(BBBEthPoolV1, null, 2));
-
-  // Write artifact for main contract to frontend/src/contracts
-  const BridgeBackBetterV1 = artifacts.readArtifactSync('BridgeBackBetterV1');
-  fs.writeFileSync(`${contractsDirEth}/BridgeBackBetterV1.json`, JSON.stringify(BridgeBackBetterV1, null, 2));
-};
 
 async function main() {
   dotenv.config();
@@ -66,19 +30,9 @@ async function main() {
   // Deploy the main contract on Ethereum
   const BridgeBackBetterV1 = await ethers.getContractFactory('BridgeBackBetterV1');
   BridgeBackBetterV1.connect(ethWallet);
-  const mainContract = await BridgeBackBetterV1.deploy(BigInt(POOL_FEE_WEI), BigInt(NODE_OPERATOR_FEE_WEI));
+  const mainContract = await BridgeBackBetterV1.deploy(BigInt(DELEGATOR_FEE_WEI), BigInt(NODE_OPERATOR_FEE_WEI));
   await mainContract.deployed();
   console.log(`BridgeBackBetterV1 deployed to: ${mainContract.address} on Ethereum`);
-
-  // Deploy contract for a liquidity pool for ether on Ethereum
-  const BBBEthPoolV1 = await ethers.getContractFactory('BBBEthPoolV1', ethWallet);
-  BBBEthPoolV1.connect(ethWallet);
-  const ethPool = await BBBEthPoolV1.deploy(mainContract.address);
-  await ethPool.deployed();
-  console.log(`BBBEthPoolV1 deployed to ${ethPool.address} on Ethereum`);
-
-  // Save contract artifacts and deployed addresses to use in Hardhat tasks
-  saveFrontendFiles(ethPool, mainContract);
 }
 
 // Allows for using async/await everywhere and properly handling errors

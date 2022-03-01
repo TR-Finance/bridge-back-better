@@ -47,6 +47,9 @@ module.exports = {
     'no-console': 'off',
     // Some best practices slow down development and should be warnings instead of errors
     'no-unused-vars': 'warn',
+    'spaced-comment': 'warn',
+    'no-useless-return': 'warn',
+    'no-empty': 'warn',
   },
   settings: {
     'import/resolver': {
